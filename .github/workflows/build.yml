@@ -19,11 +19,22 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Generate Android Project
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android Project
         run: |
           mkdir -p app/src/main/assets
+          mkdir -p app/src/main/res/values
           mkdir -p app/src/main/java/com/lumanotes/app
           cp index.html app/src/main/assets/index.html
+
+          # strings.xml
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">LumaNotes</string>
+          </resources>
+          EOF
 
           # settings.gradle
           cat << 'EOF' > settings.gradle
@@ -80,10 +91,6 @@ jobs:
                   targetCompatibility JavaVersion.VERSION_17
               }
           }
-
-          dependencies {
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-          }
           EOF
 
           # app/src/main/AndroidManifest.xml
@@ -92,11 +99,12 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
               <application
-                  android:label="LumaNotes"
-                  android:theme="@style/Theme.AppCompat.NoActionBar">
+                  android:label="@string/app_name"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
                   <activity
                       android:name=".MainActivity"
-                      android:exported="true">
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize|keyboardHidden">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -111,14 +119,14 @@ jobs:
           package com.lumanotes.app;
 
           import android.annotation.SuppressLint;
+          import android.app.Activity;
           import android.graphics.Color;
           import android.os.Bundle;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
-          import androidx.appcompat.app.AppCompatActivity;
 
-          public class MainActivity extends AppCompatActivity {
+          public class MainActivity extends Activity {
               private WebView webView;
 
               @SuppressLint("SetJavaScriptEnabled")
@@ -159,7 +167,8 @@ jobs:
           gradle-version: '8.5'
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon
+        run: |
+          gradle assembleDebug --no-daemon
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
