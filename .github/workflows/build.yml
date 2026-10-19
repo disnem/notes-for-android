@@ -19,156 +19,28 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          gradle-version: '8.5'
+          node-version: 20
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Android Project Structure
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create App and Build APK
         run: |
-          mkdir -p app/src/main/assets
-          mkdir -p app/src/main/java/com/lumanotes/app
-
-          # Копируем файл приложения
-          cp index.html app/src/main/assets/index.html
-
-          # Корневой build.gradle
-          cat << 'EOF' > build.gradle
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.2'
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          EOF
-
-          # settings.gradle
-          cat << 'EOF' > settings.gradle
-          include ':app'
-          rootProject.name = "LumaNotes"
-          EOF
-
-          # app/build.gradle
-          cat << 'EOF' > app/build.gradle
-          plugins {
-              id 'com.android.application'
-          }
-
-          android {
-              namespace 'com.lumanotes.app'
-              compileSdk 34
-
-              defaultConfig {
-                  applicationId "com.lumanotes.app"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                  }
-              }
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-          }
-
-          dependencies {
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-          }
-          EOF
-
-          # AndroidManifest.xml
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <application
-                  android:allowBackup="true"
-                  android:label="LumaNotes"
-                  android:supportsRtl="true"
-                  android:theme="@style/Theme.AppCompat.NoActionBar">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:configChanges="orientation|screenSize|keyboardHidden">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-
-          # MainActivity.java
-          cat << 'EOF' > app/src/main/java/com/lumanotes/app/MainActivity.java
-          package com.lumanotes.app;
-
-          import android.annotation.SuppressLint;
-          import android.graphics.Color;
-          import android.os.Bundle;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-          import androidx.appcompat.app.AppCompatActivity;
-
-          public class MainActivity extends AppCompatActivity {
-              private WebView webView;
-
-              @SuppressLint("SetJavaScriptEnabled")
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  getWindow().getDecorView().setBackgroundColor(Color.parseColor("#09090B"));
-                  getWindow().setStatusBarColor(Color.parseColor("#09090B"));
-
-                  webView = new WebView(this);
-                  setContentView(webView);
-
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setDatabaseEnabled(true);
-                  settings.setAllowFileAccess(true);
-
-                  webView.setBackgroundColor(Color.parseColor("#09090B"));
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.loadUrl("file:///android_asset/index.html");
-              }
-
-              @Override
-              public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) {
-                      webView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
-              }
-          }
-          EOF
-
-      - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace
+          cordova create myApp com.lumanotes.app LumaNotes
+          cd myApp
+          rm -rf www/*
+          cp ../index.html www/index.html
+          cordova platform add android
+          cordova build android --debug
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
           name: LumaNotes-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: myApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
