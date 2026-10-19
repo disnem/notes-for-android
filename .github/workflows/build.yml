@@ -19,19 +19,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Native Android Project
+      - name: Generate Android Project Structure
         run: |
           mkdir -p app/src/main/assets
-          mkdir -p app/src/main/res/values
           mkdir -p app/src/main/java/com/lumanotes/app
 
-          # Копируем HTML файл в assets
+          # Копируем файл приложения
           cp index.html app/src/main/assets/index.html
 
-          # Создаем build.gradle (корень проекта)
+          # Корневой build.gradle
           cat << 'EOF' > build.gradle
           buildscript {
               repositories {
@@ -50,13 +54,13 @@ jobs:
           }
           EOF
 
-          # Создаем settings.gradle
+          # settings.gradle
           cat << 'EOF' > settings.gradle
           include ':app'
           rootProject.name = "LumaNotes"
           EOF
 
-          # Создаем app/build.gradle
+          # app/build.gradle
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
@@ -78,9 +82,6 @@ jobs:
                   release {
                       minifyEnabled false
                   }
-                  debug {
-                      applicationIdSuffix ""
-                  }
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -90,11 +91,10 @@ jobs:
 
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'androidx.webkit:webkit:1.10.0'
           }
           EOF
 
-          # Создаем AndroidManifest.xml
+          # AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -117,14 +117,13 @@ jobs:
           </manifest>
           EOF
 
-          # Создаем MainActivity.java с поддержкой полного экрана и localStorage
+          # MainActivity.java
           cat << 'EOF' > app/src/main/java/com/lumanotes/app/MainActivity.java
           package com.lumanotes.app;
 
           import android.annotation.SuppressLint;
           import android.graphics.Color;
           import android.os.Bundle;
-          import android.view.View;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
@@ -156,7 +155,7 @@ jobs:
 
               @Override
               public void onBackPressed() {
-                  if (webView.canGoBack()) {
+                  if (webView != null && webView.canGoBack()) {
                       webView.goBack();
                   } else {
                       super.onBackPressed();
@@ -165,10 +164,8 @@ jobs:
           }
           EOF
 
-      - name: Build APK via Gradle
-        run: |
-          gradle wrapper
-          ./gradlew assembleDebug --stacktrace
+      - name: Build Debug APK
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
