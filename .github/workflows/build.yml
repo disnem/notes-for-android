@@ -27,23 +27,23 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Build Tooling
+      - name: Install Dependencies
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
 
-      - name: Package App Project
+      - name: Initialize and Add Android Platform
         run: |
           npx cap init LumaNotes com.lumanotes.app --web-dir .
-          npx cap add android
+          CI=true npx cap add android
 
-      - name: Compile Debug APK
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Publish Downloadable APK
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
           name: LumaNotes-APK
