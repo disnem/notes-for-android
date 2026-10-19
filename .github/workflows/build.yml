@@ -8,62 +8,85 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: mingc/android-build-box:latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup App Structure
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate Android Project
         run: |
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/java/com/lumanotes/app
           cp index.html app/src/main/assets/index.html
 
+          # settings.gradle
           cat << 'EOF' > settings.gradle
-          include ':app'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
           rootProject.name = "LumaNotes"
+          include ':app'
           EOF
 
+          # build.gradle (root)
           cat << 'EOF' > build.gradle
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:7.4.2'
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
           }
           EOF
 
+          # app/build.gradle
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
           }
+
           android {
-              compileSdkVersion 33
-              namespace "com.lumanotes.app"
+              namespace 'com.lumanotes.app'
+              compileSdk 34
+
               defaultConfig {
                   applicationId "com.lumanotes.app"
-                  minSdkVersion 24
-                  targetSdkVersion 33
+                  minSdk 24
+                  targetSdk 34
                   versionCode 1
                   versionName "1.0"
               }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
           }
+
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
           }
           EOF
 
+          # app/src/main/AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -83,9 +106,12 @@ jobs:
           </manifest>
           EOF
 
+          # app/src/main/java/com/lumanotes/app/MainActivity.java
           cat << 'EOF' > app/src/main/java/com/lumanotes/app/MainActivity.java
           package com.lumanotes.app;
 
+          import android.annotation.SuppressLint;
+          import android.graphics.Color;
           import android.os.Bundle;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
@@ -93,24 +119,47 @@ jobs:
           import androidx.appcompat.app.AppCompatActivity;
 
           public class MainActivity extends AppCompatActivity {
+              private WebView webView;
+
+              @SuppressLint("SetJavaScriptEnabled")
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  WebView webView = new WebView(this);
+                  getWindow().getDecorView().setBackgroundColor(Color.parseColor("#09090B"));
+                  getWindow().setStatusBarColor(Color.parseColor("#09090B"));
+
+                  webView = new WebView(this);
                   setContentView(webView);
 
-                  WebSettings s = webView.getSettings();
-                  s.setJavaScriptEnabled(true);
-                  s.setDomStorageEnabled(true);
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setDatabaseEnabled(true);
+                  settings.setAllowFileAccess(true);
 
+                  webView.setBackgroundColor(Color.parseColor("#09090B"));
                   webView.setWebViewClient(new WebViewClient());
                   webView.loadUrl("file:///android_asset/index.html");
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
               }
           }
           EOF
 
-      - name: Compile APK
-        run: gradle assembleDebug
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Build Debug APK
+        run: gradle assembleDebug --no-daemon
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
