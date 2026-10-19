@@ -29,10 +29,16 @@ jobs:
           mkdir -p app/src/main/java/com/lumanotes/app
           cp index.html app/src/main/assets/index.html
 
-          # strings.xml
+          # strings.xml & styles.xml
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">LumaNotes</string>
+          </resources>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/values/styles.xml
+          <resources>
+              <style name="AppTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen"/>
           </resources>
           EOF
 
@@ -91,6 +97,10 @@ jobs:
                   targetCompatibility JavaVersion.VERSION_17
               }
           }
+
+          dependencies {
+              // Минимальные библиотеки не требуются для чистого android.app.Activity
+          }
           EOF
 
           # app/src/main/AndroidManifest.xml
@@ -100,7 +110,7 @@ jobs:
               <uses-permission android:name="android.permission.INTERNET" />
               <application
                   android:label="@string/app_name"
-                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  android:theme="@style/AppTheme">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
@@ -134,7 +144,6 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   getWindow().getDecorView().setBackgroundColor(Color.parseColor("#09090B"));
-                  getWindow().setStatusBarColor(Color.parseColor("#09090B"));
 
                   webView = new WebView(this);
                   setContentView(webView);
@@ -168,7 +177,7 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          gradle assembleDebug --no-daemon
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
