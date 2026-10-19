@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#09090B">
+<title>LumaNotes</title>
+<style>
+  :root {
+    --bg: #09090B;
+    --card: #141417;
+    --card2: #27272A;
+    --border: #27272A;
+    --text: #F4F4F5;
+    --sub: #A1A1AA;
+    --gold: #FFD60A;
+    --red: #FF453A;
+  }
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-tap-highlight-color: transparent; 
+  }
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 90px;
+    user-select: none;
+  }
+  input, textarea, button, select { font: inherit; color: inherit; background: none; border: none; outline: none; }
+  input, textarea { user-select: text; }
+  .hidden { display: none !important; }
+
+  header {
+    position: sticky; 
+    top: 0; 
+    z-index: 10;
+    width: 100%;
+    background: rgba(9, 9, 11, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .count { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+  .btn-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--card); color: var(--gold);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .search {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 14px; font-size: 14px; color: var(--text); margin-bottom: 12px;
+  }
+  .search:focus { border-color: var(--gold); }
+  .folders { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .folders::-webkit-scrollbar { display: none; }
+  .pill {
+    padding: 6px 14px; border-radius: 20px; background: var(--card);
+    border: 1px solid var(--border); color: var(--sub); font-size: 13px; font-weight: 600; white-space: nowrap;
+  }
+  .pill.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+  main { width: 100%; padding: 14px 16px; flex: 1; }
+  .sec-title { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; margin: 10px 0 8px; }
+  .grid { display: grid; gap: 10px; margin-bottom: 18px; width: 100%; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-1 { grid-template-columns: 1fr; }
+  .card {
+    background: var(--card); border-radius: 16px; padding: 14px;
+    border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .card:active { transform: scale(0.98); }
+  .c-gold { border-color: rgba(255,214,10,0.5); background: rgba(255,214,10,0.05); }
+  .c-green { border-color: rgba(48,209,88,0.5); background: rgba(48,209,88,0.05); }
+  .c-blue { border-color: rgba(10,132,255,0.5); background: rgba(10,132,255,0.05); }
+  .c-red { border-color: rgba(255,69,58,0.5); background: rgba(255,69,58,0.05); }
+  .n-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .n-body { font-size: 12.5px; color: var(--sub); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+  .n-meta { margin-top: 10px; font-size: 11px; color: #71717A; display: flex; justify-content: space-between; align-items: center; }
+  .tag { background: #1C1C20; color: var(--sub); padding: 2px 7px; border-radius: 6px; }
+
+  .bottom-nav {
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    right: 0;
+    width: 100%;
+    background: rgba(18, 18, 21, 0.95); 
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border); 
+    padding: 12px 20px;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    z-index: 20;
+  }
+  .new-btn {
+    background: var(--gold); color: #000; font-weight: 700; font-size: 14px;
+    padding: 10px 18px; border-radius: 24px; cursor: pointer;
+  }
+
+  #editor { position: fixed; inset: 0; width: 100%; height: 100%; background: var(--bg); z-index: 30; display: flex; flex-direction: column; }
+  .ed-top { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .back { color: var(--gold); font-size: 16px; font-weight: 600; cursor: pointer; }
+  .ed-tools { display: flex; gap: 8px; align-items: center; }
+  .ed-meta { padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #18181B; font-size: 12px; color: var(--sub); }
+  .dots { display: flex; gap: 8px; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .dot.sel { border-color: #FFF; }
+  .ed-content { flex: 1; overflow-y: auto; padding: 16px; }
+  #edTitle { width: 100%; font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+  #edBody { width: 100%; min-height: 50vh; font-size: 16px; line-height: 1.55; color: #E4E4E7; resize: none; }
+  .chk-row { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; margin-bottom: 6px; }
+  .chk-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--gold); }
+  .ed-bar { padding: 10px 16px; background: #121215; display: flex; gap: 8px; border-top: 1px solid var(--border); }
+  .chip { background: var(--card2); padding: 6px 12px; border-radius: 8px; font-size: 13px; color: var(--gold); font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="home">
+  <header>
+    <div class="top-bar">
+      <div>
+        <div id="countTxt" class="count">0 NOTES</div>
+        <h1>Notes</h1>
+      </div>
+      <button class="btn-circle" onclick="toggleGrid()" title="View">⊞</button>
+    </div>
+    <input id="searchBox" class="search" type="text" placeholder="Search notes & checklists..." oninput="render()">
+    <div id="folderBar" class="folders"></div>
+  </header>
+
+  <main>
+    <div id="pinWrap" class="hidden">
+      <div class="sec-title">★ Pinned</div>
+      <div id="pinList" class="grid cols-2"></div>
+    </div>
+    <div id="otherTitle" class="sec-title hidden" style="color:var(--sub)">Notes</div>
+    <div id="noteList" class="grid cols-2"></div>
+  </main>
+
+  <div class="bottom-nav">
+    <button onclick="addNote(true)" style="color:var(--gold);font-weight:600;font-size:14px;cursor:pointer;">☑ Checklist</button>
+    <button onclick="addNote(false)" class="new-btn">＋ New Note</button>
+  </div>
+</div>
+
+<div id="editor" class="hidden">
+  <div class="ed-top">
+    <button class="back" onclick="closeEd()">‹ Notes</button>
+    <div class="ed-tools">
+      <button id="pinBtn" class="btn-circle" onclick="togglePin()">★</button>
+      <button id="lockBtn" class="btn-circle" onclick="toggleLock()">🔒</button>
+      <button class="btn-circle" style="color:var(--red)" onclick="delNote()">🗑</button>
+      <button class="new-btn" style="padding:6px 14px" onclick="closeEd()">Done</button>
+    </div>
+  </div>
+  <div class="ed-meta">
+    <select id="edFolder" onchange="saveEd()" style="background:var(--card);padding:4px 8px;border-radius:6px;border:1px solid var(--border)">
+      <option>Personal</option><option>Work</option><option>Ideas</option><option>Lists</option>
+    </select>
+    <div class="dots">
+      <div class="dot" style="background:#27272A" onclick="setCol('')"></div>
+      <div class="dot" style="background:#FFD60A" onclick="setCol('c-gold')"></div>
+      <div class="dot" style="background:#30D158" onclick="setCol('c-green')"></div>
+      <div class="dot" style="background:#0A84FF" onclick="setCol('c-blue')"></div>
+      <div class="dot" style="background:#FF453A" onclick="setCol('c-red')"></div>
+    </div>
+    <span id="wordCnt">0 words</span>
+  </div>
+  <div class="ed-content">
+    <input id="edTitle" type="text" placeholder="Title" oninput="saveEd()">
+    <div id="chkList" style="margin-bottom:12px;"></div>
+    <textarea id="edBody" placeholder="Start typing..." oninput="saveEd()"></textarea>
+  </div>
+  <div class="ed-bar">
+    <button class="chip" onclick="addChk('')">☑ + Checklist Item</button>
+    <button class="chip" onclick="ins('• ')">• Bullet</button>
+    <button class="chip" onclick="ins('\n──────────\n')">― Line</button>
+  </div>
+</div>
+
+<script>
+const FOLDERS = ['All','Personal','Work','Ideas','Lists'];
+let curFolder = 'All', isGrid = true, curId = null;
+let notes = JSON.parse(localStorage.getItem('luma_apk_v2')) || [
+  {id:'1', title:'Welcome to LumaNotes', body:'iPhone-style dark theme built for Android.\n• Pin important notes with ★\n• Lock private notes with 🔒\n• Color-code cards & add checklists', folder:'Personal', col:'c-gold', pin:true, lock:false, chk:[{t:'Try creating a note',d:true},{t:'Test checklist items',d:false}], ts:Date.now()}
+];
+
+function save() { localStorage.setItem('luma_apk_v2', JSON.stringify(notes)); }
+function toggleGrid() { isGrid = !isGrid; render(); }
+
+function render() {
+  document.getElementById('folderBar').innerHTML = FOLDERS.map(f =>
+    `<button class="pill ${f===curFolder?'active':''}" onclick="curFolder='${f}';render()">${f}</button>`
+  ).join('');
+
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const list = notes.filter(n => (curFolder==='All' || n.folder===curFolder) &&
+    (n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
+  ).sort((a,b) => b.ts - a.ts);
+
+  document.getElementById('countTxt').textContent = `${list.length} ${list.length === 1 ? 'NOTE' : 'NOTES'}`;
+  const pins = list.filter(n => n.pin), others = list.filter(n => !n.pin);
+  const cls = 'grid ' + (isGrid ? 'cols-2' : 'cols-1');
+
+  document.getElementById('pinList').className = cls;
+  document.getElementById('noteList').className = cls;
+  document.getElementById('pinWrap').classList.toggle('hidden', !pins.length);
+  document.getElementById('otherTitle').classList.toggle('hidden', !pins.length || !others.length);
+
+  const cardHTML = n => {
+    const done = (n.chk||[]).filter(c=>c.d).length, tot = (n.chk||[]).length;
+    return `<div class="card ${n.col||''}" onclick="openEd('${n.id}')">
+      <div>
+        <div class="n-title">${n.lock?'🔒 ':''}${n.title||'Untitled'}</div>
+        <div class="n-body">${n.lock?'Locked note · Tap to unlock':(n.body||'No text')}</div>
+      </div>
+      <div class="n-meta">
+        <span>${tot?`☑ ${done}/${tot}`:new Date(n.ts).toLocaleDateString()}</span>
+        <span class="tag">${n.folder}</span>
+      </div>
+    </div>`;
+  };
+  document.getElementById('pinList').innerHTML = pins.map(cardHTML).join('');
+  document.getElementById('noteList').innerHTML = others.map(cardHTML).join('');
+}
+
+function addNote(withChk) {
+  const n = {id:String(Date.now()), title:'', body:'', folder:curFolder==='All'?'Personal':curFolder, col:'', pin:false, lock:false, chk:withChk?[{t:'',d:false}]:[], ts:Date.now()};
+  notes.unshift(n); save(); openEd(n.id);
+}
+
+function openEd(id) {
+  const n = notes.find(x => x.id===id);
+  if (n.lock && prompt('Enter PIN (Default 1234):') !== (localStorage.getItem('luma_pin')||'1234')) return alert('Wrong PIN');
+  curId = id;
+  document.getElementById('edTitle').value = n.title;
+  document.getElementById('edBody').value = n.body;
+  document.getElementById('edFolder').value = n.folder;
+  renderChk(n); updateWords();
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('editor').classList.remove('hidden');
+}
+
+function renderChk(n) {
+  document.getElementById('chkList').innerHTML = (n.chk||[]).map((c,i) => `
+    <div class="chk-row">
+      <input type="checkbox" ${c.d?'checked':''} onchange="togChk(${i})">
+      <input type="text" style="flex:1;${c.d?'text-decoration:line-through;color:#71717A':''}" value="${c.t.replace(/"/g,'&quot;')}" oninput="edChk(${i},this.value)" placeholder="Item...">
+      <button onclick="rmChk(${i})" style="color:#71717A">✕</button>
+    </div>`).join('');
+}
+function addChk(t) { const n=notes.find(x=>x.id===curId); n.chk.push({t,d:false}); saveEd(); renderChk(n); }
+function togChk(i) { const n=notes.find(x=>x.id===curId); n.chk[i].d=!n.chk[i].d; saveEd(); renderChk(n); }
+function edChk(i,v) { const n=notes.find(x=>x.id===curId); n.chk[i].t=v; saveEd(); }
+function rmChk(i) { const n=notes.find(x=>x.id===curId); n.chk.splice(i,1); saveEd(); renderChk(n); }
+
+function saveEd() {
+  const n = notes.find(x => x.id===curId);
+  if (!n) return;
+  n.title = document.getElementById('edTitle').value;
+  n.body = document.getElementById('edBody').value;
+  n.folder = document.getElementById('edFolder').value;
+  n.ts = Date.now();
+  updateWords(); save();
+}
+function updateWords() {
+  const v = document.getElementById('edBody').value.trim();
+  document.getElementById('wordCnt').textContent = (v ? v.split(/\s+/).length : 0) + ' words';
+}
+function togglePin() { const n=notes.find(x=>x.id===curId); n.pin=!n.pin; saveEd(); }
+function toggleLock() {
+  const n=notes.find(x=>x.id===curId);
+  if (!localStorage.getItem('luma_pin')) localStorage.setItem('luma_pin', prompt('Set 4-digit PIN:','1234')||'1234');
+  n.lock=!n.lock; saveEd();
+}
+function setCol(c) { const n=notes.find(x=>x.id===curId); n.col=c; saveEd(); }
+function ins(s) { const b=document.getElementById('edBody'); b.value+=s; saveEd(); b.focus(); }
+function delNote() { if(confirm('Delete note?')) { notes=notes.filter(x=>x.id!==curId); save(); closeEd(); } }
+function closeEd() {
+  document.getElementById('editor').classList.add('hidden');
+  document.getElementById('home').classList.remove('hidden');
+  render();
+}
+render();
+</script>
+</body>
+</html>
