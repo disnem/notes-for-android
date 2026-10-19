@@ -19,17 +19,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Android Project
+      - name: Setup Android Project Files
         run: |
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/java/com/lumanotes/app
           cp index.html app/src/main/assets/index.html
 
-          # strings.xml & styles.xml
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">LumaNotes</string>
@@ -42,7 +38,6 @@ jobs:
           </resources>
           EOF
 
-          # settings.gradle
           cat << 'EOF' > settings.gradle
           pluginManagement {
               repositories {
@@ -62,14 +57,12 @@ jobs:
           include ':app'
           EOF
 
-          # build.gradle (root)
           cat << 'EOF' > build.gradle
           plugins {
               id 'com.android.application' version '8.2.2' apply false
           }
           EOF
 
-          # app/build.gradle
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
@@ -97,13 +90,8 @@ jobs:
                   targetCompatibility JavaVersion.VERSION_17
               }
           }
-
-          dependencies {
-              // Минимальные библиотеки не требуются для чистого android.app.Activity
-          }
           EOF
 
-          # app/src/main/AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -124,7 +112,6 @@ jobs:
           </manifest>
           EOF
 
-          # app/src/main/java/com/lumanotes/app/MainActivity.java
           cat << 'EOF' > app/src/main/java/com/lumanotes/app/MainActivity.java
           package com.lumanotes.app;
 
@@ -144,6 +131,7 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   getWindow().getDecorView().setBackgroundColor(Color.parseColor("#09090B"));
+                  getWindow().setStatusBarColor(Color.parseColor("#09090B"));
 
                   webView = new WebView(this);
                   setContentView(webView);
@@ -170,12 +158,14 @@ jobs:
           }
           EOF
 
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.5'
 
       - name: Build Debug APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           gradle assembleDebug --no-daemon --stacktrace
 
