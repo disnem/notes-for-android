@@ -34,7 +34,11 @@ jobs:
 
           cat << 'EOF' > app/src/main/res/values/styles.xml
           <resources>
-              <style name="AppTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen"/>
+              <style name="AppTheme" parent="@android:style/Theme.NoTitleBar">
+                  <item name="android:windowBackground">#09090B</item>
+                  <item name="android:navigationBarColor">#09090B</item>
+                  <item name="android:statusBarColor">#09090B</item>
+              </style>
           </resources>
           EOF
 
@@ -74,10 +78,10 @@ jobs:
 
               defaultConfig {
                   applicationId "com.lumanotes.app"
-                  minSdk 24
+                  minSdk 26
                   targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
+                  versionCode 2
+                  versionName "1.1"
               }
 
               buildTypes {
@@ -118,7 +122,11 @@ jobs:
           import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.graphics.Color;
+          import android.os.Build;
           import android.os.Bundle;
+          import android.view.View;
+          import android.view.Window;
+          import android.view.WindowManager;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
@@ -130,8 +138,20 @@ jobs:
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  getWindow().getDecorView().setBackgroundColor(Color.parseColor("#09090B"));
-                  getWindow().setStatusBarColor(Color.parseColor("#09090B"));
+
+                  Window window = getWindow();
+                  window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                  window.setStatusBarColor(Color.parseColor("#09090B"));
+                  window.setNavigationBarColor(Color.parseColor("#09090B"));
+
+                  // Force dark navigation buttons off so the 3 navigation buttons stay light/visible on the black bar
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      View decor = window.getDecorView();
+                      int flags = decor.getSystemUiVisibility();
+                      flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                      flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                      decor.setSystemUiVisibility(flags);
+                  }
 
                   webView = new WebView(this);
                   setContentView(webView);
@@ -167,7 +187,7 @@ jobs:
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug --no-daemon
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
